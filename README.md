@@ -10,7 +10,7 @@
 + Editar usuário
 + Pesquisar usuário pelo nome ou indentificador único
 + Seguir um usuário (public account)
-+ Eviar solicitação (private account)
++ Enviar solicitação (private account)
 + Aceitar solicitação (private account)
 + Seguir de volta
 + Criar publicação
@@ -18,3 +18,6 @@
 + Comentários
 + Perfil
 + Em breve mais funções...
+
+> Banco de dados utilizado no projeto: Postgresql 🐘
+> Documentação: Postman
