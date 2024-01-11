@@ -19,6 +19,6 @@
 + Perfil
 + Em breve mais funções...
 
-> Banco de dados utilizado no projeto: <span style:"color: read">Postgresql<span> 🐘
+> Banco de dados utilizado no projeto: Postgresql 🐘
 
 > Documentação: Postman
