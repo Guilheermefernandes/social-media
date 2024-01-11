@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id Int @id @default(autoincrement())
+  name String
+  avatar String?
+  email String @unique
+  password String
+  name_user String @unique
+  describe String?
+  date_of_birth String
+  private_account Boolean @default(false)
+  web_site_link String?
+  followers Int @default(0)
+  following Int @default(0)
+  publication Int @default(0)
+
+  request Inscriptions[] @relation("request")
+  receiver Inscriptions[] @relation("receiver")
+  posts Posts[]
+  images_posts Images_posts[]
+  comments_post Comments_post[]
+  like_comment_post Like_comment_post[]
+  sub_comments_post Sub_comments_post[]
+  sub_like_comments_post Sub_like_comments_post[]
+  like_post Like_post[]
+
+  @@map("users")
+}
+
+model Inscriptions {
+  id Int @id @default(autoincrement())
+  id_request Int
+  id_receiver Int
+  send_receiver Boolean @default(true)
+  accept_receiver Boolean @default(false)
+  send_request Boolean @default(false)
+  accept_request Boolean @default(false)
+  indentifier String @unique
+
+  request Users @relation("request", fields: [id_request], references: [id])
+  receiver Users @relation("receiver",fields: [id_receiver], references: [id])
+
+  @@map("inscriptions")
+}
+
+model Posts {
+  id Int @id @default(autoincrement())
+  id_user Int
+  describe String
+  date_created String
+  disposition_status Boolean @default(true)
+  private Boolean @default(false)
+  deleted Boolean @default(false)
+
+  users Users @relation(fields: [id_user], references: [id])
+  images_posts Images_posts[]
+  Comments_post Comments_post[]
+  like_comment_post Like_comment_post[]
+  sub_comments_post Sub_comments_post[]
+  sub_like_comments_post Sub_like_comments_post[]
+  like_post Like_post[]
+
+  @@map("posts")
+}
+
+model Like_post {
+  id Int @id @default(autoincrement())
+  id_post Int
+  id_user Int
+
+  posts Posts @relation(fields: [id_post], references: [id])
+  users Users @relation(fields: [id_user], references: [id])
+
+  @@map("like_post")
+}
+
+model Images_posts {
+  id Int @id @default(autoincrement())
+  image_indentifier String
+  order Int
+  id_user Int
+  id_post Int
+
+  users Users @relation(fields: [id_user], references: [id])
+  posts Posts @relation(fields: [id_post], references: [id])
+
+  @@map("images_posts")
+}
+
+model Comments_post {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_post Int
+  comment String
+  date_created String
+
+  users Users @relation(fields: [id_user], references: [id])
+  posts Posts @relation(fields: [id_post], references: [id])
+  
+  like_comment_post Like_comment_post[]
+  sub_comments_post Sub_comments_post[]
+  sub_like_comments_post Sub_like_comments_post[]
+
+  @@map("comments_post")
+}
+
+model Like_comment_post {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_post Int
+  id_comment Int
+
+  users Users @relation(fields: [id_user], references: [id])
+  posts Posts @relation(fields: [id_post], references: [id])
+  comments_post Comments_post @relation(fields: [id_comment], references: [id])
+
+  @@map("like_comment_post")
+}
+
+model Sub_comments_post {
+  id Int @id @default(autoincrement())
+  id_post Int
+  id_comment Int
+  id_user Int
+  comment String
+  date_created String
+
+  posts Posts @relation(fields: [id_post], references: [id])
+  comments_post Comments_post @relation(fields: [id_comment], references: [id])
+  users Users @relation(fields: [id_user], references: [id])
+  sub_like_comments_post Sub_like_comments_post[]
+
+  @@map("sub_comment_post")
+}
+
+model Sub_like_comments_post {
+  id Int @id @default(autoincrement())
+  id_post Int
+  id_comment Int
+  id_sub_comment Int
+  id_user Int
+
+  posts Posts @relation(fields: [id_post], references: [id])
+  comments_post Comments_post @relation(fields: [id_comment], references: [id])
+  sub_comments_post Sub_comments_post @relation(fields: [id_sub_comment], references: [id])
+  users Users @relation(fields: [id_user], references: [id])
+
+  @@map("sub_like_comments_post")
+}
