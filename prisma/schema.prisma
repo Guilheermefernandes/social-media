@@ -104,6 +104,9 @@ model Comments_post {
   id_post Int
   comment String
   date_created String
+  deleted Boolean @default(false)
+  comment_edited Boolean @default(false)
+  release_date String?
 
   users Users @relation(fields: [id_user], references: [id])
   posts Posts @relation(fields: [id_post], references: [id])
@@ -135,6 +138,9 @@ model Sub_comments_post {
   id_user Int
   comment String
   date_created String
+  deleted Boolean @default(false)
+  comment_edited Boolean @default(false)
+  release_date String?
 
   posts Posts @relation(fields: [id_post], references: [id])
   comments_post Comments_post @relation(fields: [id_comment], references: [id])
