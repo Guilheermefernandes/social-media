@@ -22,16 +22,38 @@ export const getOne: RequestHandler = async (req, res) => {
     });
 }
 
+type CountResult = { count: bigint }[];
 export const search: RequestHandler = async (req ,res) => {
-    const { s } = req.query;
+    const { s, load = 1 } = req.query;
     const user = req.user as Users;
+    const limit = 10;
+
+    const input_load = parseInt(load as string);
+
+    const result: CountResult = await user_query.cout_search(s as string, user.id);
+    const number_of_records = parseInt(result[0].count.toString().replace('n', '')); 
+    
+    const number_of_loads = Math.ceil(number_of_records / limit);
+
+    if(input_load > number_of_loads) return res.json({ message: `Não há mais contatos com o nome ${s}!` });
+    const next_load = input_load < number_of_loads ? input_load + 1 : input_load;
+
+    const offset = (input_load * limit) - limit;
 
     if(typeof s === 'string'){
-        const result = await user_query.search({ s: s as string, id: user.id });
-        if(result){
-            return res.json({ response: result });
-        }
+        const result = await user_query.search({ s: s as string, id: user.id, limit, offset });
+        if(result && result.response){
+            return res.json({ 
+                result,
+                number_of_loads,
+                current_load: input_load,
+                isNext: next_load === input_load ? false : true,
+                next_load
+            });
+        }else{ return res.json({ message: 'Não há registros com esse nome!' }); }
     }
+
+    res.json({ error: 'Ocorreu um erro! Tente novamente.' });
 }
 
 export const update: RequestHandler = async (req, res) => {

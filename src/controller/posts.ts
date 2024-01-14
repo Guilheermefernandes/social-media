@@ -61,3 +61,4 @@ export const get_all_post: RequestHandler = async (req, res) => {
     */
 }
 
+// TODO (GET ONE POST)(GET ALL POST)(POSTS HOME)(EDIT POST)(DELETE POST)

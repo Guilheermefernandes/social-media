@@ -97,3 +97,5 @@ export const get_all_posts = async (id: number, meId: number) => {
         return { message: 'Esse usuario não existe!' };
     }catch(err) { return false }
 }
+
+// TODO (GET ONE POST)(GET ALL POST)(POSTS HOME)(EDIT POST)(DELETE POST)

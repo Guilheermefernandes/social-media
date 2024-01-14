@@ -1,4 +1,4 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, Blocked } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -12,10 +12,10 @@ export const blocked = async (data: SchemaCreateBlocked) => {
     }catch(err) { return false }
 }
 
-export const unlock = async (id: number) => {
+export const unlock = async (indentifier: string) => {
     try{
         const unlock = await prisma.blocked.delete({
-            where: { id }
+            where: { indentifier }
         });
         if(unlock) return unlock;
 
@@ -23,12 +23,35 @@ export const unlock = async (id: number) => {
     }catch(err) { return false }
 }
 
+interface ScehmaBlockedContacts extends Blocked {
+    avatar: string | null,
+    name_user: string,
+    name: string
+}
 export const blocked_contacts = async (id: number) => {
     try{
         const contacts = await prisma.blocked.findMany({
             where: { id_user: id }
         });
-        if(contacts) return contacts;
+        if(contacts){
+            const list_contacts: ScehmaBlockedContacts[] = [];
+            for(let i=0;i<contacts.length;i++){
+                const user = await prisma.users.findFirst({
+                    where: { id: contacts[i].id_blocked }
+                });
+
+                // TODO update avatar
+                if(!user) continue;
+                list_contacts.push({
+                    ...contacts[i],
+                    avatar: user.avatar,
+                    name_user: user.name_user,
+                    name: user.name
+                });
+            }
+
+            return list_contacts;
+        }
 
         return { message: 'Não há nenhum contato bloqueado!'};
     }catch(err) { return false }

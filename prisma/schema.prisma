@@ -175,6 +175,7 @@ model Blocked {
   id Int @id @default(autoincrement())
   id_user Int
   id_blocked Int
+  indentifier String @unique 
 
   user Users @relation("user", fields: [id_user], references: [id])
   blocked Users @relation("blocked", fields: [id_blocked], references: [id])
@@ -186,6 +187,7 @@ model Silence {
   id Int @id @default(autoincrement())
   id_user Int
   id_silence Int
+  indentifier String @unique
 
   user_action Users @relation("user_action", fields: [id_user], references: [id])
   silence Users @relation("silence", fields: [id_silence], references: [id])
