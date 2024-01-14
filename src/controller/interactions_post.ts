@@ -4,13 +4,17 @@ import * as interactionsPost from '../services/interactions_post';
 import { Users } from "@prisma/client";
 
 const errorIndentifier: string = 'Indentificador diferentes!';
+const errorConvert: string = 'Ocorreu um erro no tratamento! Tente novamente.'
 
 export const like_post: RequestHandler = async (req, res) => {
     const { userId, postId } = req.params;
-
     const user = req.user as Users;
+    const input_userId = parseInt(userId);
+    const input_postId = parseInt(postId);
+    if(Number.isNaN(input_userId)) return res.json({ error: errorConvert });
+    if(Number.isNaN(input_postId)) return res.json({ error: errorConvert });
 
-    if(user.id !== parseInt(userId)) return res.json({ error: errorIndentifier });
+    if(user.id !== input_userId) return res.json({ error: errorIndentifier });
 
     const like = await interactionsPost.like_post({
         id_user: parseInt(userId),

@@ -24,6 +24,8 @@ model Users {
   followers Int @default(0)
   following Int @default(0)
   publication Int @default(0)
+  deleted Boolean @default(false)
+  archive_account Boolean @default(false)
 
   request Inscriptions[] @relation("request")
   receiver Inscriptions[] @relation("receiver")
@@ -34,6 +36,10 @@ model Users {
   sub_comments_post Sub_comments_post[]
   sub_like_comments_post Sub_like_comments_post[]
   like_post Like_post[]
+  user Blocked[] @relation("user")
+  blocked Blocked[] @relation("blocked")
+  user_action Silence[] @relation("user_action")
+  silence Silence[] @relation("silence")
 
   @@map("users")
 }
@@ -163,4 +169,26 @@ model Sub_like_comments_post {
   users Users @relation(fields: [id_user], references: [id])
 
   @@map("sub_like_comments_post")
+}
+
+model Blocked {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_blocked Int
+
+  user Users @relation("user", fields: [id_user], references: [id])
+  blocked Users @relation("blocked", fields: [id_blocked], references: [id])
+
+  @@map("blocked")
+}
+
+model Silence {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_silence Int
+
+  user_action Users @relation("user_action", fields: [id_user], references: [id])
+  silence Users @relation("silence", fields: [id_silence], references: [id])
+
+  @@map("silence")
 }

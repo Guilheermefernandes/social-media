@@ -19,12 +19,19 @@ export const getOne = async (name_user: string) => {
     }catch(err) { return false } 
 }
 
-type SchemaQuery = { s?: string, id?: number }; 
+type SchemaQuery = { s?: string, id?: number };
 export const search = async (query: SchemaQuery) => {
     try{
         if(query.s){
-            const result = await prisma.$queryRaw`SELECT * FROM users WHERE UPPER(name) LIKE UPPER(${`%${query.s}%`}) OR UPPER(name_user) LIKE UPPER(${`%${query.s}%`})`;
+            const result: Users[] = await prisma.$queryRaw`SELECT * FROM users WHERE UPPER(name) LIKE UPPER(${`%${query.s}%`}) OR UPPER(name_user) LIKE UPPER(${`%${query.s}%`})`;
             if(result){
+                const blocked = await prisma.blocked.findFirst(
+                    { where: { id_blocked: query.id } });
+                if(blocked){
+                    const new_result = result.filter(item => item.id !== blocked.id_user);
+                    return new_result;
+                }
+                
                 return { result, code: 200 };
             }
         }

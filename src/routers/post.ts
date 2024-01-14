@@ -28,7 +28,7 @@ router.delete('/delete/sub_comment/:subCommentId/comment/:commentId/post/:postId
 router.delete('/delete/like/:likeId/sub_comment/:subCommentId/comment/:commentId/post/:postId/user/:userId', passport.authenticate('jwt', {session: false}), interactions.delete_like_sub_comment);
 
 router.get('/all/comments/post/:postId', passport.authenticate('jwt', {session: false}), retrievePost.get_comments);
-
+router.get('/all/sub_comments/comment/:commentId/post/:postId', passport.authenticate('jwt', {session: false}), retrievePost.get_sub_comments)
 export default router;
 
 // delete sub_comment

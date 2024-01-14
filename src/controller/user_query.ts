@@ -24,9 +24,10 @@ export const getOne: RequestHandler = async (req, res) => {
 
 export const search: RequestHandler = async (req ,res) => {
     const { s } = req.query;
+    const user = req.user as Users;
 
     if(typeof s === 'string'){
-        const result = await user_query.search({ s: s as string });
+        const result = await user_query.search({ s: s as string, id: user.id });
         if(result){
             return res.json({ response: result });
         }
