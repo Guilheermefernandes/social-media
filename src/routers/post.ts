@@ -9,7 +9,12 @@ const router = Router();
 
 // post
 router.post('/create/post', passport.authenticate('jwt', {session: false}), upload.array('images', 5), post.create_post);
+router.get('/post/:postId/user_post/:userIdPost', passport.authenticate('jwt', {session: false}), post.get_one);
 router.get('/all/posts', passport.authenticate('jwt', {session: false}), post.get_all_post);
+router.get('/home', passport.authenticate('jwt', {session: false}), post.home)
+router.put('/update/post/:postId', passport.authenticate('jwt', {session: false}), post.update_post);
+
+// like
 router.post('/like/user/:userId/post/:postId', passport.authenticate('jwt', {session: false}), interactions.like_post);
 router.delete('/delete/like/:likeId/post/:postId/user/:userId', passport.authenticate('jwt', {session: false}), interactions.delete_like_post);
 

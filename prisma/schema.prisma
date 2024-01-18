@@ -21,9 +21,6 @@ model Users {
   date_of_birth String
   private_account Boolean @default(false)
   web_site_link String?
-  followers Int @default(0)
-  following Int @default(0)
-  publication Int @default(0)
   deleted Boolean @default(false)
   archive_account Boolean @default(false)
 
@@ -40,6 +37,9 @@ model Users {
   blocked Blocked[] @relation("blocked")
   user_action Silence[] @relation("user_action")
   silence Silence[] @relation("silence")
+  views Views[]
+  user_model_favorite Favorite[] @relation("user")
+  favorite Favorite[] @relation("favorite")
 
   @@map("users")
 }
@@ -53,6 +53,8 @@ model Inscriptions {
   send_request Boolean @default(false)
   accept_request Boolean @default(false)
   indentifier String @unique
+  request_receiver BigInt?
+  receiver_request BigInt?
 
   request Users @relation("request", fields: [id_request], references: [id])
   receiver Users @relation("receiver",fields: [id_receiver], references: [id])
@@ -68,6 +70,9 @@ model Posts {
   disposition_status Boolean @default(true)
   private Boolean @default(false)
   deleted Boolean @default(false)
+  edited Boolean @default(false)
+  edition_date String?
+  timestamp BigInt
 
   users Users @relation(fields: [id_user], references: [id])
   images_posts Images_posts[]
@@ -76,6 +81,7 @@ model Posts {
   sub_comments_post Sub_comments_post[]
   sub_like_comments_post Sub_like_comments_post[]
   like_post Like_post[]
+  views Views[]
 
   @@map("posts")
 }
@@ -193,4 +199,26 @@ model Silence {
   silence Users @relation("silence", fields: [id_silence], references: [id])
 
   @@map("silence")
+}
+
+model Views {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_post Int
+
+  users Users @relation(fields: [id_user], references: [id])
+  posts Posts @relation(fields: [id_post], references: [id])
+
+  @@map("views")
+}
+
+model Favorite {
+  id Int @id @default(autoincrement())
+  id_user Int
+  id_favorite Int
+
+  user_mode_favorite Users @relation("user", fields: [id_user], references: [id])
+  favorite Users @relation("favorite", fields: [id_favorite], references: [id])
+
+  @@map("favorite")
 }

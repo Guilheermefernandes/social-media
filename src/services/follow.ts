@@ -11,12 +11,6 @@ export const subscribe = async (data: SchemaSubscribe) => {
     const send_solicitation = async (receiver: Users, enrollment_verification: Inscriptions) => {
         const inscription = await prisma.inscriptions.update({ where: { id: enrollment_verification.id }, data: 
             { accept_receiver: true, send_receiver: false} });
-        
-        await prisma.users.update({ where: { id: data.me.id }, data: 
-            { following: data.me.following + 1 } })
-
-        await prisma.users.update({ where: { id: receiver.id }, data: 
-            { followers: receiver.followers + 1 } })
 
         return { message: 'Solicitação enviada!', code: 200, indentifier: inscription.indentifier };
     }
@@ -68,6 +62,8 @@ export const subscribe = async (data: SchemaSubscribe) => {
                         }  
                     }
                 }
+
+                
 
                 const uuid = uuidv4();
                 await prisma.inscriptions.create({
@@ -127,16 +123,7 @@ export const subscribe = async (data: SchemaSubscribe) => {
             });
 
             if(request_submited){
-                const request_update = await prisma.users.update({ where: { id: data.me.id }, data: {
-                    following: data.me.following + 1
-                }})
-                
-                const receiver_update = await prisma.users.update({ where: { id: receiver.id }, data: {
-                    followers: receiver.followers + 1
-                } });
-                
-
-                return { message: `Você esta seguindo ${request_update ? request_update.name : 'essa pessoa'}!`, 
+                return { message: `Você esta seguindo essa pessoa!`, 
                     code: 201,  
                     indentification_code: uuid
                 };
@@ -168,19 +155,17 @@ export const reply_request = async (data: SchemaReplyRequest) => {
                             return { message: 'Você já acceitou essa solicitação!' };       
                         }
 
-                        await prisma.users.update({ where: { id: data.me.id }, data: 
-                            {followers: data.me.followers + 1} });
-
-                        await prisma.users.update({ where: { id: request_user.id }, data: 
-                            {following: request_user.following + 1} });
-
-                        await prisma.inscriptions.update({ where: { id: inscription.id }, data: 
-                            {accept_receiver: true, send_receiver: false } });
-                            
+                        const timestamp = new Date().getTime();
                         if(inscription.send_request === true && inscription.id_request === data.me.id){
                             await prisma.inscriptions.update({ where: { id: inscription.id }, data: 
-                                {accept_request: true, send_request: false } });        
+                                {accept_request: true, send_request: false, receiver_request: timestamp } });        
+                            
+                            return { message: `Você aceitou o pedido de ${request_user.name}` };
                         }
+
+                        await prisma.inscriptions.update({ where: { id: inscription.id }, data: 
+                            {accept_receiver: true, send_receiver: false, request_receiver: timestamp } });
+                            
 
                         return { message: `Você aceitou o pedido de ${request_user.name}`, indentifier: data.indentifier };
                     
@@ -200,12 +185,10 @@ export const reply_request = async (data: SchemaReplyRequest) => {
                     return { message: 'Você já aceitou essa solicitação!' };
                 }
 
+                const timestamp = new Date().getTime();
                 const inscription_update = await prisma.inscriptions.update({ where: {
                     id: inscription.id
-                }, data: {send_receiver: false, accept_receiver: true, send_request: false, accept_request: false } });
-                
-                await prisma.users.update({ where: { id: request_user.id }, data: { following: request_user.following + 1 } });
-                await prisma.users.update({ where: { id: data.me.id }, data: { followers: data.me.followers + 1 } });
+                }, data: {send_receiver: false, accept_receiver: true, send_request: false, accept_request: false, request_receiver: timestamp } });
                 
                 return { message: `${request_user.name} esta te seguindo!.`, code: 200, indentifier: data.indentifier };
             } 
@@ -234,16 +217,10 @@ export const follow_back_private_account = async (data: SchemaFollowBackPrivateA
                     return { message: `Solicitação enviada para ${request_user.name}`, indentifier: data.indentifier };
                 }
 
+                const timestamp = new Date().getTime();
                 await prisma.inscriptions.update({ where: { id: inscription.id }, data: 
-                    {send_request: false, accept_request: true} });
+                    {send_request: false, accept_request: true, receiver_request: timestamp} });
                 
-                // Update usuário request
-                await prisma.users.update({ where: { id: request_user.id }, data: 
-                    {followers: request_user.followers + 1} });
-                
-                // update usuário receiver
-                await prisma.users.update({ where: { id: data.me.id}, data: 
-                    {following: data.me.following + 1} });
 
                 return { message: `Você esta seguindo ${request_user.name}`, indentifier: data.indentifier };
             }
@@ -363,15 +340,6 @@ export const stop_following = async (id: number, id_deleted: number) => {
             }
 
             const user_desinscribed = await prisma.users.findFirst({ where: { id: id_deleted } });
-            if(user_desinscribed){
-                const desinscribed = await prisma.users.update({ where: { id: user_desinscribed.id }, data: 
-                    { followers: user_desinscribed.followers - 1 } });
-            }
-            const user = await prisma.users.findFirst({ where: { id } });
-            if(user){
-                const user_update = await prisma.users.update({ where: { id: user.id }, data: 
-                    { following: user.following - 1 } });
-            }
 
             return { message: `Você não esta mais seguindo ${user_desinscribed ? user_desinscribed.name : 'este usuário'}!` };
         }
@@ -413,15 +381,6 @@ export const unsubscribe = async (id: number, id_deleted: number) => {
 
             // UPDATE USERS
             const canceled = await prisma.users.findFirst({ where: { id: id_deleted } });
-            if(canceled){
-                const desinscribed = await prisma.users.update({ where: { id: canceled.id }, data: 
-                    { following: canceled.following - 1 } });
-            }
-            const user = await prisma.users.findFirst({ where: { id } });
-            if(user){
-                const user_update = await prisma.users.update({ where: { id: user.id }, data: 
-                    { followers: user.followers - 1 } });
-            }
 
             return { message: `Você cancelou a inscrição ${canceled ? 'de '+canceled.name : 'desse usuário' }!` }
         }
