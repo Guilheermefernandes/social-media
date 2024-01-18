@@ -1,5 +1,5 @@
-import { PrismaClient, Prisma, Inscriptions, Posts } from '@prisma/client';
-import { skip } from 'node:test';
+import { PrismaClient, Prisma, Inscriptions, Posts, Users } from '@prisma/client';
+import { userInfo } from 'os';
 
 const prisma = new PrismaClient();
 
@@ -227,6 +227,9 @@ export const get_all_posts = async (id: number, offset: number, limit: number, m
 type SchemaPostOmitTimeStamp = Omit<Posts, 'timestamp'>;
 export const home = async (id: number, offset_inscription: number, limit_inscription: number) => {
     try{
+
+        let next_offset: number = 0;
+
         const get_inscriptions = async (meId: number, skip: number, take: number) => {
             const inscriptions = await prisma.inscriptions.findMany({
                 where: {
@@ -253,7 +256,9 @@ export const home = async (id: number, offset_inscription: number, limit_inscrip
 
         
         if(inscriptions){
-            const get_id = async (inscriptions: Inscriptions[]): Promise<{ id: number, timestamp: bigint | null }[]> => {
+
+            // Function
+            const get_id = async (inscriptions: Inscriptions[]): Promise<{ id: number, timestamp: bigint | null, id_post:number }[]> => {
                 const following_id: { id: number, timestamp: bigint | null }[] = [];
                 for(let i=0;i<inscriptions.length;i++){
                     if(inscriptions[i].id_request === id && inscriptions[i].accept_receiver === true){
@@ -263,17 +268,29 @@ export const home = async (id: number, offset_inscription: number, limit_inscrip
                     }
                 }
 
-                const list_id: { id: number, timestamp: bigint | null }[] = [];
+                const list_id: { id: number, timestamp: bigint | null, id_post: number }[] = [];
                 for(let i=0;i<following_id.length;i++){
                     const user = await prisma.users.findFirst({
                         where: { id: following_id[i].id }
                     });
 
                     if(user){
-                        // TODO count
-                        const posts = await prisma.$queryRaw`SELECT id FROM posts where id_user = ${following_id[i].id} AND "timestamp" > ${following_id[i].timestamp}`;
+                        // Verifica se o usuario tem novos posts
+                        const posts: { id: number }[]= await prisma.$queryRaw`
+                        SELECT posts.id
+                        FROM posts 
+                        LEFT JOIN views ON posts.id = views.id_post AND views.id_user = ${id}
+                        WHERE posts.id_user = ${user.id} AND posts.timestamp > ${following_id[i].timestamp}
+                        AND views.id_post IS NULL LIMIT 1`;
+
                         if(Array.isArray(posts) && posts.length > 0){
-                            list_id.push(following_id[i]);
+                            // check view publication
+                            for(let j=0;j<posts.length;j++){
+                                const isView = await prisma.views.findFirst({ where: { id_user: id, id_post: posts[j].id } });
+                                if(!isView){
+                                    list_id.push({ ...following_id[i], id_post: posts[i].id });
+                                }
+                            }
                         }else { continue };
                     }
                 }
@@ -281,27 +298,28 @@ export const home = async (id: number, offset_inscription: number, limit_inscrip
                 return list_id;
             }
 
-            const expected_ids: { id: number, timestamp: bigint | null }[] = [];
+            const expected_ids: { id: number, timestamp: bigint | null, id_post: number }[] = [];
             const verification = async (take: number) => {
                 const lack = take;
                 const jump = offset_inscription + limit_inscription;
+                next_offset += jump + limit_inscription;
                 const remaining_inscriptions = await get_inscriptions(id, jump, lack);
                 if(Array.isArray(remaining_inscriptions) && remaining_inscriptions.length > 0){
-                    const fered_ids: { id: number, timestamp: bigint | null }[] = await get_id(remaining_inscriptions);
+                    const fered_ids: { id: number, timestamp: bigint | null, id_post: number }[] = await get_id(remaining_inscriptions);
                     for(let i in fered_ids){
                         expected_ids.push(fered_ids[i]);
                     }
                     if(expected_ids.length === take){
                         return expected_ids;
-                    }else { 
+                    }else {
                         verification(take - expected_ids.length); 
                     }
                 }
             }
 
-            const ids_with_pulications: { id: number, timestamp: bigint | null }[] = await get_id(inscriptions);
+            const ids_with_pulications: { id: number, timestamp: bigint | null, id_post: number }[] = await get_id(inscriptions);
             if(ids_with_pulications.length < limit_inscription){
-                const new_ids: { id: number, timestamp: bigint | null }[] | undefined = await verification(ids_with_pulications.length - limit_inscription);
+                const new_ids: { id: number, timestamp: bigint | null, id_post: number }[] | undefined = await verification(ids_with_pulications.length - limit_inscription);
                 if(Array.isArray(new_ids) && new_ids.length === limit_inscription){
                     for(let i=0;i<new_ids.length;i++){
                         ids_with_pulications.push(new_ids[i]);
@@ -311,25 +329,23 @@ export const home = async (id: number, offset_inscription: number, limit_inscrip
 
             const posts: SchemaPostOmitTimeStamp[] = [];
             for(let i=0;i<ids_with_pulications.length;i++){
-                const post = await prisma.posts.findFirst({
-                    where: {
-                        id_user: ids_with_pulications[i].id,
-                        timestamp: {
-                            gt: ids_with_pulications[i].timestamp as bigint
-                        }
-                    }
-                });
+                const user = await prisma.users.findFirst({ where: { id: ids_with_pulications[i].id } });
+                if(!user) continue;
+                    
+                const post = await prisma.posts.findFirst({ where: { id: ids_with_pulications[i].id_post } });
+
                 if(post){
+                    // add visualization
+                    const view = await prisma.views.create({ data: { id_user: id, id_post: post.id } });
                     const { timestamp, ...publication } = post;
                     posts.push(publication);
                 }
             }
 
-            return posts;
+            return { posts, next_offset };
         }
 
         return { message: 'Não você ainda não está seguindo ninguém!' }
-        // TODO tenho que verificar se não foi visualizado!
     }catch(err) { return false }
 }
 
